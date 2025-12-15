@@ -1,0 +1,67 @@
+# Flutter/Dart
+app/.dart_tool/
+app/.packages
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/
+app/pubspec.lock
+
+# Android
+app/android/.gradle/
+app/android/local.properties
+app/android/*.iml
+app/android/.idea/
+app/android/app/debug
+app/android/app/profile
+app/android/app/release
+app/android/key.properties
+app/android/*.jks
+app/android/*.keystore
+
+# iOS
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.framework
+app/ios/Flutter/Flutter.podspec
+app/ios/Flutter/Generated.xcconfig
+app/ios/Flutter/app.flx
+app/ios/Flutter/engine
+app/ios/ServiceDefinitions.json
+
+# Node.js / Cloudflare Workers
+api/node_modules/
+api/.wrangler/
+api/dist/
+api/*.log
+api/npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Coverage
+coverage/
+.coverage
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+*.app

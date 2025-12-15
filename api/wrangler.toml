@@ -1,0 +1,27 @@
+name = "school-pocket-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "school-pocket-db"
+database_id = "<your-database-id>"
+
+# R2 Storage (if needed)
+# [[r2_buckets]]
+# binding = "IMAGES"
+# bucket_name = "{{BUCKET_NAME}}"
+
+# Environment Variables
+[vars]
+FIREBASE_PROJECT_ID = "<your-firebase-project-id>"
+
+# Staging environment
+[env.staging]
+name = "school-pocket-api-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "school-pocket-db-staging"
+database_id = "<your-staging-database-id>"
