@@ -15,7 +15,7 @@ database_id = "<your-database-id>"
 
 # Environment Variables
 [vars]
-FIREBASE_PROJECT_ID = "<your-firebase-project-id>"
+FIREBASE_PROJECT_ID = "saas-apps-c5dce"
 
 # Staging environment
 [env.staging]
