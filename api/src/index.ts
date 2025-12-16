@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { authMiddleware } from './middleware/auth';
+import authRoutes from './routes/auth';
+import usersRoutes from './routes/users';
 
 type Bindings = {
   DB: D1Database;
@@ -25,7 +28,12 @@ app.get('/api/health', (c) => c.json({
   timestamp: new Date().toISOString()
 }));
 
-// TODO: Add authentication middleware
-// TODO: Add API routes
+// 認証が必要なAPIルート
+app.use('/api/auth/*', authMiddleware);
+app.use('/api/users/*', authMiddleware);
+
+// ルーティング
+app.route('/api/auth', authRoutes);
+app.route('/api/users', usersRoutes);
 
 export default app;
