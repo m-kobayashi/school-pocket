@@ -1,98 +1,107 @@
-/**
- * 画像アップロードAPI
- *
- * 注意: R2バケットの設定が必要です
- */
-
 import { Hono } from 'hono';
-import { getFirebaseUid } from '../middleware/auth';
-import { successResponse, validationError, serverError } from '../utils/response';
+import type { Context } from 'hono';
 
 type Bindings = {
   DB: D1Database;
+  IMAGES: R2Bucket;
   FIREBASE_PROJECT_ID: string;
-  // IMAGES?: R2Bucket;
 };
 
-const upload = new Hono<{ Bindings: Bindings }>();
+type Variables = {
+  userId: string;
+};
 
-/**
- * 画像アップロード
- * POST /api/upload/image
- *
- * Content-Type: multipart/form-data
- * Body: FormData with 'image' field
- *
- * 注意: 現在R2バケットが設定されていないため、ダミーのURLを返します
- * 実際の運用ではR2バケットを設定し、画像をアップロードする必要があります
- */
-upload.post('/image', async (c) => {
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+// 画像アップロード
+app.post('/image', async (c: Context) => {
+  const userId = c.get('userId');
+
   try {
-    const firebaseUid = getFirebaseUid(c);
-
-    if (!firebaseUid) {
-      return validationError('認証が必要です');
-    }
-
-    // FormDataから画像を取得
     const formData = await c.req.formData();
-    const image = formData.get('image');
+    const file = formData.get('file') as File;
 
-    if (!image || !(image instanceof File)) {
-      return validationError('画像ファイルが必要です');
+    if (!file) {
+      return c.json({
+        success: false,
+        error: { message: 'ファイルが指定されていません' },
+      }, 400);
     }
 
-    // ファイルサイズチェック（最大10MB）
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (image.size > maxSize) {
-      return validationError('画像サイズは10MB以下にしてください');
+    // ファイルサイズチェック（1MB以下）
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    if (file.size > maxSize) {
+      return c.json({
+        success: false,
+        error: { message: 'ファイルサイズは1MB以下にしてください' },
+      }, 400);
     }
 
-    // ファイルタイプチェック
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(image.type)) {
-      return validationError('画像形式はJPEG、PNG、WebPのみ対応しています');
+    // ファイル拡張子チェック
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({
+        success: false,
+        error: { message: '画像ファイル（JPEG、PNG、WebP）のみアップロード可能です' },
+      }, 400);
     }
 
-    // R2バケットが設定されている場合のアップロード処理
-    // if (c.env.IMAGES) {
-    //   const imageBuffer = await image.arrayBuffer();
-    //   const imageId = `${firebaseUid}/${Date.now()}_${crypto.randomUUID()}`;
-    //   const extension = image.type.split('/')[1];
-    //   const key = `prints/${imageId}.${extension}`;
-    //
-    //   await c.env.IMAGES.put(key, imageBuffer, {
-    //     httpMetadata: {
-    //       contentType: image.type,
-    //     },
-    //   });
-    //
-    //   // R2のPublic URLを生成（実際の設定に応じて変更）
-    //   const imageUrl = `https://your-r2-bucket.com/${key}`;
-    //   const thumbnailUrl = imageUrl; // サムネイルは別途生成が必要
-    //
-    //   return successResponse({
-    //     image_url: imageUrl,
-    //     thumbnail_url: thumbnailUrl,
-    //   }, 201);
-    // }
+    // ファイル名生成（ユーザーID/タイムスタンプ_ランダム文字列.拡張子）
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    const ext = file.name.split('.').pop() || 'jpg';
+    const filename = `${userId}/${timestamp}_${randomStr}.${ext}`;
 
-    // R2が設定されていない場合はダミーURLを返す
-    // 実際の運用では上記のR2アップロード処理を有効化してください
-    const dummyImageId = `${firebaseUid}/${Date.now()}_${crypto.randomUUID()}`;
-    const extension = image.type.split('/')[1];
+    // R2にアップロード
+    await c.env.IMAGES.put(filename, file.stream(), {
+      httpMetadata: {
+        contentType: file.type,
+      },
+    });
 
-    return successResponse({
-      message: 'R2バケットが設定されていないため、ダミーURLを返しています',
-      image_url: `https://placeholder.com/prints/${dummyImageId}.${extension}`,
-      thumbnail_url: `https://placeholder.com/prints/thumb_${dummyImageId}.${extension}`,
-      note: 'wrangler.tomlでR2バケットを設定し、このコードのコメントを解除してください'
-    }, 201);
+    // Workers経由でアクセスできるURL
+    const baseUrl = new URL(c.req.url).origin;
+    const url = `${baseUrl}/api/upload/images/${filename}`;
 
-  } catch (error) {
-    console.error('Upload image error:', error);
-    return serverError('画像のアップロードに失敗しました');
+    return c.json({
+      success: true,
+      data: { url },
+    });
+  } catch (error: any) {
+    console.error('Image upload error:', error);
+    return c.json({
+      success: false,
+      error: { message: error.message || '画像アップロードに失敗しました' },
+    }, 500);
   }
 });
 
-export default upload;
+// 画像取得（認証不要で公開）
+app.get('/images/*', async (c: Context) => {
+  try {
+    const path = c.req.path.replace('/api/upload/images/', '');
+    const object = await c.env.IMAGES.get(path);
+
+    if (!object) {
+      return c.json({
+        success: false,
+        error: { message: '画像が見つかりません' },
+      }, 404);
+    }
+
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set('etag', object.httpEtag);
+    headers.set('cache-control', 'public, max-age=31536000'); // 1年間キャッシュ
+
+    return new Response(object.body, { headers });
+  } catch (error: any) {
+    console.error('Image fetch error:', error);
+    return c.json({
+      success: false,
+      error: { message: '画像の取得に失敗しました' },
+    }, 500);
+  }
+});
+
+export default app;

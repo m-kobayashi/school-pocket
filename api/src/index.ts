@@ -12,7 +12,7 @@ import uploadRoutes from './routes/upload';
 
 type Bindings = {
   DB: D1Database;
-  // IMAGES: R2Bucket;
+  IMAGES: R2Bucket;
   FIREBASE_PROJECT_ID: string;
 };
 
@@ -42,7 +42,7 @@ app.use('/api/items/*', authMiddleware);
 app.use('/api/events/*', authMiddleware);
 app.use('/api/prints/*', authMiddleware);
 app.use('/api/timetables/*', authMiddleware);
-app.use('/api/upload/*', authMiddleware);
+app.use('/api/upload/image', authMiddleware);
 
 // ルーティング
 app.route('/api/auth', authRoutes);
