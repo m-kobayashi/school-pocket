@@ -6,12 +6,12 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "school-pocket-db"
-database_id = "<your-database-id>"
+database_id = "e40b072d-144d-4bf0-b501-5ee3425ccd1a"
 
-# R2 Storage (if needed)
-# [[r2_buckets]]
-# binding = "IMAGES"
-# bucket_name = "{{BUCKET_NAME}}"
+# R2 Storage
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "school-pocket-images"
 
 # Environment Variables
 [vars]

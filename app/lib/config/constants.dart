@@ -1,6 +1,6 @@
 class Constants {
   // API設定
-  static const String apiBaseUrl = 'https://school-pocket-api.YOUR_SUBDOMAIN.workers.dev';
+  static const String apiBaseUrl = 'https://school-pocket-api.m-kobayashi-v.workers.dev';
 
   // ローカル開発時は以下を使用
   // static const String apiBaseUrl = 'http://localhost:8787';
